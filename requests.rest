@@ -1,0 +1,52 @@
+GET http://localhost:5000/posts
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiUGF1bCIsImlhdCI6MTY0NTM5NzQzMSwiZXhwIjoxNjQ1Mzk3NDQ2fQ.45GISk9TNL758LeT84nvYvJknS1s0JFeewdogr13bTI
+###
+
+POST http://localhost:5000/token
+Content-Type: application/json
+
+{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiUGF1bCIsImlhdCI6MTY0NTM5NzY4M30.KaV7fstF5NURNrWA5Rigszj3WLLytAkIfANa_k9s0L0"
+}
+
+###
+
+DELETE http://localhost:5000/logout
+Content-Type: application/json
+
+{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiUGF1bCIsImlhdCI6MTY0NTM5NzY4M30.KaV7fstF5NURNrWA5Rigszj3WLLytAkIfANa_k9s0L0"
+}
+
+###
+POST http://localhost:5000/login
+Content-Type: application/json
+
+{
+    "username": "Paul"
+}
+
+
+###
+
+POST http://localhost:5000/user/register
+Content-Type: application/json
+
+{
+    "FirstName": "Paul",
+    "LastName": "Pirie",
+    "Email": "pauljohnpirie@yahoo.co.uk",
+    "Password": "123",
+    "DateOfBirth": "16/08/2000"
+}
+
+###
+
+POST http://localhost:5000/user/appointment/new
+Content-Type: application/json
+
+{
+    "title": "test",
+    "description": "Lorem Ipsum",
+    "number": 6
+}

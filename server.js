@@ -9,6 +9,7 @@ const CryptoJS = require("crypto-js");
 
 let User = require('./schemas/userSchema');
 let Appointment = require('./schemas/appointmentSchema');
+let Hospital = require('./schemas/hospitalSchema');
 
 let refreshTokens = [];
 
@@ -138,11 +139,39 @@ app.post('/user/register', (req, res) => {
 });
 
 app.post('/user/appointment/new', (req,res) =>{
-    const newAppointment = new Appointment({ title: req.body.title, description: req.body.description, number: req.body.number });
+    const newAppointment = new Appointment({ 
+        title: req.body.title, 
+        description: req.body.description, 
+        number: req.body.number,
+        location: req.body.location,
+        ward: req.body.ward,
+        date: req.body.date,
+        time: req.body.time
+    });
         newAppointment.save()
         .then(() => res.json('Appointment Added'))
         .catch(err => {
             res.status(400).json(({ error: 'Error creating your appointment please try again later.'}));
+            console.log('Error: ' + err);
+        });
+});
+
+app.post('/hospital/new', (req,res) =>{
+    const newHospital = new Hospital({ 
+        name: req.body.name, 
+        address: req.body.address, 
+        postcode: req.body.postcode, 
+        number: req.body.number,
+        website: req.body.website,
+        parking: req.body.parking,
+        transport: req.body.transport,
+        description: req.body.description,
+        mapHTML: req.body.mapHTML,
+    });
+        newHospital.save()
+        .then(() => res.json('Hospital Added'))
+        .catch(err => {
+            res.status(400).json(({ error: 'Error creating the Hospital please try again later.'}));
             console.log('Error: ' + err);
         });
 });

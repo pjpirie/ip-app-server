@@ -17,6 +17,35 @@ const hospitalSchema = new Schema({
         required: true,
         minlength: 5
     },
+    number: {
+        type: String,
+        required: true,
+        minlength: 5
+    },
+    website: {
+        type: String,
+        required: true,
+        minlength: 5
+    },
+    parking: {
+        type: Boolean,
+        required: true
+    },
+    transport: {
+        type: String,
+        required: true,
+        minlength: 5
+    },
+    description: {
+        type: String,
+        required: true,
+        minlength: 5
+    },
+    mapHTML: {
+        type: String,
+        required: true,
+        minlength: 1
+    }
 });
 
 const Module = mongoose.model('Hospital', hospitalSchema);

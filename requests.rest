@@ -46,7 +46,28 @@ POST http://localhost:5000/user/appointment/new
 Content-Type: application/json
 
 {
-    "title": "test",
-    "description": "Lorem Ipsum",
-    "number": 6
+    "title": "Blood Test", 
+    "description": "Diabetes Blood Test", 
+    "number": "001",
+    "location": "Stobhill Hospital",
+    "ward": "4A",
+    "date": "13/01/22",
+    "time": "13:30"
+}
+
+###
+
+POST http://localhost:5000/hospital/new
+Content-Type: application/json
+
+{
+    "name": "Stobhill Hospital",
+    "address": "133 Balornock Rd, Glasgow ",
+    "postcode": "G21 3UW",
+    "number": "0141 201 3000",
+    "website": "nhsggc.org.uk",
+    "parking": true,
+    "transport": "On-Site",
+    "description": "Stobhill Hospital is an Ambulatory Care and Diagnostic Hospital, located in Springburn in the north of Glasgow, Scotland. It serves the population of North Glasgow and part of East Dunbartonshire. It is managed by NHS Greater Glasgow and Clyde.",
+    "mapHTML": "<iframe src='https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2237.285110543636!2d-4.220370683944117!3d55.892414488682846!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x488843890455ebf9%3A0x9f08895e757b45c5!2sNew%20Stobhill%20Hospital!5e0!3m2!1sen!2suk!4v1647437668722!5m2!1sen!2suk'></iframe>"
 }

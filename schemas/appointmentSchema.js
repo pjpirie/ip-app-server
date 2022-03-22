@@ -40,7 +40,7 @@ const appointmentSchema = new Schema({
     user: {
         type: String,
         required: true,
-        minlength: 1
+        minlength: 1,
     }
 });
 

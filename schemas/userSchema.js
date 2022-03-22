@@ -12,6 +12,11 @@ const userSchema = new Schema({
         required: true,
         minlength: 1
     },
+    phone: {
+        type: String,
+        required: true,
+        minlength: 5
+    },
     email: {
         type: String,
         required: true,
@@ -22,16 +27,6 @@ const userSchema = new Schema({
         type: String,
         required: true
     },
-    dob: {
-        type: String,
-        required: true,
-        unique: false
-    },
-    auth: {
-        type: Boolean,
-        required: true,
-        default: false
-    }
 });
 
 const User = mongoose.model('User', userSchema);

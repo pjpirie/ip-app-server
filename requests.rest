@@ -33,11 +33,11 @@ POST http://localhost:5000/user/register
 Content-Type: application/json
 
 {
-    "FirstName": "Paul",
-    "LastName": "Pirie",
-    "Email": "pauljohnpirie@yahoo.co.uk",
-    "Password": "123",
-    "DateOfBirth": "16/08/2000"
+    "first_name": "Paul",
+    "last_name": "Pirie",
+    "email": "pauljohnpirie@yahoo.co.uk",
+    "password": "123",
+    "phone": "07575939905"
 }
 
 ###
@@ -61,13 +61,24 @@ POST http://localhost:5000/hospital/new
 Content-Type: application/json
 
 {
-    "name": "Stobhill Hospital",
-    "address": "133 Balornock Rd, Glasgow ",
-    "postcode": "G21 3UW",
-    "number": "0141 201 3000",
-    "website": "nhsggc.org.uk",
+    "name": "Glasgow Royal Infirmary",
+    "address": "84 Castle St, Glasgow",
+    "postcode": "G4 0SF",
+    "number": "0141 211 4000",
+    "website": "https://www.nhsggc.org.uk/patients-and-visitors/main-hospital-sites/glasgow-royal-campus/glasgow-royal-infirmary/",
     "parking": true,
     "transport": "On-Site",
-    "description": "Stobhill Hospital is an Ambulatory Care and Diagnostic Hospital, located in Springburn in the north of Glasgow, Scotland. It serves the population of North Glasgow and part of East Dunbartonshire. It is managed by NHS Greater Glasgow and Clyde.",
-    "mapHTML": "<iframe src='https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2237.285110543636!2d-4.220370683944117!3d55.892414488682846!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x488843890455ebf9%3A0x9f08895e757b45c5!2sNew%20Stobhill%20Hospital!5e0!3m2!1sen!2suk!4v1647437668722!5m2!1sen!2suk'></iframe>"
+    "description": "The Glasgow Royal Infirmary is a large teaching hospital. With a capacity of around 1,000 beds, the hospital campus covers an area of around 8 hectares, situated on the north-eastern edge of the city centre of Glasgow, Scotland. It is managed by NHS Greater Glasgow and Clyde.",
+    "mapHTML": "<iframe src='https://www.google.com/maps/embed?pb=!1m23!1m12!1m3!1d35815.04456701567!2d-4.261330281315463!3d55.87237689116133!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m8!3e6!4m0!4m5!1s0x488844025d1da12f%3A0x973cf4cc9403e9f7!2sglasgow%20hospitals!3m2!1d55.8646816!2d-4.2336462!5e0!3m2!1sen!2suk!4v1647859795970!5m2!1sen!2suk'></iframe>"
+}
+
+###
+
+POST http://localhost:5000/appointment/type/new
+Content-Type: application/json
+
+{
+    "title": "Ultrasound Scan",
+    "description": "An ultrasound scan can be used to monitor an unborn baby, diagnose a condition, or guide a surgeon during certain procedures.",
+    "identifier": "ULTRASOUND_SCAN"
 }

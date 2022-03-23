@@ -12,11 +12,6 @@ const appointmentSchema = new Schema({
         required: false,
         minlength: 1
     },
-    description: {
-        type: String,
-        required: true,
-        minlength: 5
-    },
     location: {
         type: String,
         required: true,

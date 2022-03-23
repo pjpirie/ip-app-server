@@ -67,26 +67,53 @@ const posts = [
 
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader && authHeader.split(' ')[1].trim();
+    let rToken = authHeader && authHeader.split(' ')[2].trim();
     if(token == null) return res.sendStatus(401);
-    jwt.verify(token, jwtSecret, (err, user) => {
-        if(err) return res.sendStatus(403);
-        req.user = user;
-        next();
-    });
+    RefreshToken.findOne({token: rToken}, (RTerr, RTdata) => {
+        if(RTerr) rToken = null;
+        if(RTdata === null) rToken = null;
+        jwt.verify(token, jwtSecret, (err, user) => {
+            if(err){
+                // console.log('Rtoken ',rToken);
+                // console.log(` Refresh token exists > ${rToken ? 'True' : 'False'}`);
+                // console.log(rToken);
+                if(rToken !== null){
+                    // console.log("Refresh Token Exists");
+                    jwt.verify(rToken, refreshTokenSecret, (err, data) => {
+                        // console.log(err, "<-Error -Verify- Data-> ", data);
+                        if(err) return res.sendStatus(403);
+                        // console.log("User ", data.id);
+                        req.user = data.id;
+                        req.newAuthToken = genAccessToken(data.id);
+                        // console.log("Refresh Token Verified");
+                        return next();
+                    })
+                }else{
+                    // console.log("Refresh Token Not Found");
+                    return res.sendStatus(403);
+                }
+            }
+            req.user = user;
+            return next();
+        });
 
+    })
 }
 
-const genAccessToken = (user) => {
-    return jwt.sign(user, jwtSecret, {expiresIn: '300s'});
+const genAccessToken = (userID) => {
+    return jwt.sign({id: userID}, jwtSecret, {expiresIn: '300s'});
 }
+
+
 
 app.get('/', (req, res) => {
     res.status(200).send("Hello, World!")
 });
 
-app.get('/auth', authenticateToken, (req, res) => {
-    res.status(200);
+app.post('/auth', authenticateToken, (req, res) => {
+    if(req.newAuthToken)res.status(200).send({authToken: req.newAuthToken, status: 200});
+    return res.status(200);
 });
 
 /* 
@@ -153,7 +180,7 @@ app.post('/user/login', (req, res) => {
             if (passwordHash.verify(password, data.password)) {
                 const username = req.body.username;
                 const user = {name: username, id: data._id};
-                const accessToken = genAccessToken(user);
+                const accessToken = genAccessToken(user.id);
 
                 RefreshToken.exists({ userID: data._id }, (ExistErr, ExistData) => {
                     if(ExistErr){
@@ -188,18 +215,22 @@ app.post('/user/login', (req, res) => {
 
 app.post('/token', (req, res) => {
 const refreshToken = req.body.token;
-if(refreshToken == null) return res.sendStatus(401);
-if(!refreshTokens.includes(refreshToken)) return res.sendStatus(403);
-jwt.verify(refreshToken, refreshTokenSecret, (err, user) => {
-    if(err) return res.sendStatus(403).json(err);
-    const accessToken = genAccessToken({name: user.name})
-    res.json(accessToken);
-});
+    if(refreshToken == null) return res.sendStatus(401);
+    RefreshToken.find({ token: refreshToken }, (err, data) => {
+        if(!data.includes(refreshToken)) return res.sendStatus(403);
+        jwt.verify(refreshToken, refreshTokenSecret, (err, user) => {
+            if(err) return res.sendStatus(403).json(err);
+            const accessToken = genAccessToken(user._id)
+            res.json(accessToken);
+        });
+    })
 });
 
 app.delete('/logout', (req, res) => {
-    refreshTokens = refreshTokens.filter(token => token !== req.body.token);
-    res.sendStatus(204);
+    RefreshToken.findOneAndDelete({ token: req.body.token }, (err) => {
+        if(err) return res.sendStatus(500);
+        res.sendStatus(204);
+    })
 })  
 
 app.listen(port, '0.0.0.0', () => {
@@ -207,18 +238,17 @@ app.listen(port, '0.0.0.0', () => {
 });
 
 
-app.post('/user/appointment/new', (req,res) =>{
+app.post('/user/appointment/new', authenticateToken, (req,res) =>{
     const newAppointment = new Appointment({ 
         title: req.body.title, 
-        description: req.body.description, 
-        number: req.body.number,
+        number: req.body.number ?? "Not Applicable",
         location: req.body.location,
-        ward: req.body.ward,
+        ward: req.body.ward ?? 'None',
         date: req.body.date,
         time: req.body.time
     });
         newAppointment.save()
-        .then(() => res.json('Appointment Added'))
+        .then(() => res.json('Appointment Created'))
         .catch(err => {
             res.status(400).json(({ error: 'Error creating your appointment please try again later.'}));
             console.log('Error: ' + err);
@@ -237,6 +267,13 @@ app.post('/appointment/type/new', (req,res) =>{
             res.status(400).json(({ error: 'Error creating your appointment type please try again later.'}));
             console.log('Error: ' + err);
         });
+});
+
+app.get('/appointment/type', (req,res) =>{
+    AppointmentType.find({}, (err, data) => {
+        if(err) return res.send(err);
+        res.json(data);
+    })
 });
 
 app.get('/hospitals', (req,res) =>{

@@ -44,10 +44,10 @@ Content-Type: application/json
 
 POST http://localhost:5000/user/appointment/new
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYyMzZhZTY4MDdjMTU4ODFjZWEwNzJjMyIsImlhdCI6MTY0ODE0MDIzMSwiZXhwIjoxNjQ4MTQwNTMxfQ.GDeqRe6VZLCVzk2PUc-zLA2WduKptdOccOMJ8D34_Nk eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYyMzZhZTY4MDdjMTU4ODFjZWEwNzJjMyIsImlhdCI6MTY0ODAyNDAyN30.mJfcyW1JZN8OAuK20kMz3SnsjBQtuE1b1AtujnWP8HY
 
 {
-    "title": "Blood Test", 
-    "description": "Diabetes Blood Test", 
+    "type": "BLOOD_TEST", 
     "number": "001",
     "location": "Stobhill Hospital",
     "ward": "4A",

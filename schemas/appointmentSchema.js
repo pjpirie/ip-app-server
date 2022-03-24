@@ -2,7 +2,7 @@ const { Schema } = require("mongoose");
 const mongoose = require('mongoose');
 
 const appointmentSchema = new Schema({
-    title: {
+    type: {
         type: String,
         required: true,
         minlength: 1
@@ -13,7 +13,8 @@ const appointmentSchema = new Schema({
         minlength: 1
     },
     location: {
-        type: String,
+        type: mongoose.Types.ObjectId,
+        ref: "Hospital",
         required: true,
         minlength: 5
     },
@@ -32,7 +33,7 @@ const appointmentSchema = new Schema({
         required: true,
         minlength: 5
     },
-    user: {
+    userID: {
         type: String,
         required: true,
         minlength: 1,

@@ -67,9 +67,13 @@ const posts = [
 
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1].trim();
-    let rToken = authHeader && authHeader.split(' ')[2].trim();
-    if(token == null) return res.sendStatus(401);
+    const tokens = authHeader.split(' ');
+    
+    // console.log('[Auth][Reason]>', req.body.reason ?? 'No Reason');
+    // console.log('[Auth][Tokens]>', tokens);
+    const token = tokens[1] && tokens[1].trim();
+    let rToken = tokens[2] && tokens[2].trim();
+    if(token === (null || undefined)) return res.sendStatus(401);
     RefreshToken.findOne({token: rToken}, (RTerr, RTdata) => {
         if(RTerr) rToken = null;
         if(RTdata === null) rToken = null;
@@ -240,18 +244,19 @@ app.listen(port, '0.0.0.0', () => {
 
 app.post('/user/appointment/new', authenticateToken, (req,res) =>{
     const newAppointment = new Appointment({ 
-        title: req.body.title, 
+        type: req.body.type, 
         number: req.body.number ?? "Not Applicable",
         location: req.body.location,
-        ward: req.body.ward ?? 'None',
+        ward: req.body.ward ?? 'Not Applicable',
         date: req.body.date,
-        time: req.body.time
+        time: req.body.time,
+        userID: req.user.id ?? "Broke"
     });
         newAppointment.save()
-        .then(() => res.json('Appointment Created'))
+        .then(() => { return res.status(200).json('Appointment Created')})
         .catch(err => {
-            res.status(400).json(({ error: 'Error creating your appointment please try again later.'}));
-            console.log('Error: ' + err);
+            console.log('[Error][Appointent][new]: ' + err);
+            return res.status(400).json(({ error: 'Error creating your appointment please try again later.'}));
         });
 });
 
@@ -267,6 +272,20 @@ app.post('/appointment/type/new', (req,res) =>{
             res.status(400).json(({ error: 'Error creating your appointment type please try again later.'}));
             console.log('Error: ' + err);
         });
+});
+
+app.get('/user/appointments', authenticateToken, (req,res) =>{
+
+    Appointment.find({userID: req.user.id})
+    .populate('location')
+    .exec()
+    .then((err, data) => {
+        if(err) return res.send(err);
+        if(err === (null || undefined) || data.length === 0) return res.sendStatus(404);
+        Hospital.find({_id: data})
+        console.log(`[GET][APPOINTMENTS]>USER>${req.user.id}>DATA>${data}`);
+        res.json(data);
+    });
 });
 
 app.get('/appointment/type', (req,res) =>{

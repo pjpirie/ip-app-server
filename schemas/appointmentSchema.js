@@ -2,6 +2,11 @@ const { Schema } = require("mongoose");
 const mongoose = require('mongoose');
 
 const appointmentSchema = new Schema({
+    title: {
+        type: String,
+        required: true,
+        minlength: 1
+    },
     type: {
         type: String,
         required: true,

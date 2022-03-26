@@ -26,23 +26,23 @@ app.use(express.json())
 app.use(cors({
     origin: [
         'https://localhost:3000',
-        'http://localhost:3000'
+        'http://localhost:3000',
     ],
     credentials: true
 }));
 // app.use(function(req, res, next) {
-//     res.set('Access-Control-Allow-Origin', 'https://xpcinternational.com');
+//     res.set('Access-Control-Allow-Origin', 'http://localhost:3000');
 //     res.set('Access-Control-Allow-Credentials', true);
 //     res.set('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
 //     res.set('Access-Control-Allow-Headers', 'Origin, Product-Session, X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept, Referer, User-Agent');
 //     // intercept OPTIONS method
 //     if ('OPTIONS' == req.method) {
-//       res.send(200);
+//         res.send(200);
 //     }
 //     else {
-//       next();
+//         next();
 //     }
-//   });
+// });
 
 const uri = process.env.ATLAS_URI;
 mongoose.connect(uri).catch(console.error);
@@ -66,6 +66,8 @@ const posts = [
 ]
 
 const authenticateToken = (req, res, next) => {
+    console.log(`[POST][AUTH]`);
+    if(req.headers['authorization'] === (null || undefined)) return res.sendStatus(401);
     const authHeader = req.headers['authorization'];
     const tokens = authHeader.split(' ');
     
@@ -116,6 +118,7 @@ app.get('/', (req, res) => {
 });
 
 app.post('/auth', authenticateToken, (req, res) => {
+    console.log(`[POST][AUTH]>USER>${req.user.id}`);
     if(req.newAuthToken)res.status(200).send({authToken: req.newAuthToken, status: 200});
     return res.status(200);
 });
@@ -126,6 +129,7 @@ app.post('/auth', authenticateToken, (req, res) => {
 *   <X Returns the error / JSON [400]
 */
 app.post('/user/register', (req, res) => {
+    console.log(`[POST][REGISTER]>USER>${req.email}`);
     console.log(req.body);
     const firstname = req.body.first_name;
     const lastname = req.body.last_name;
@@ -166,6 +170,7 @@ app.post('/user/register', (req, res) => {
 
 
 app.post('/user/login', (req, res) => {
+    console.log(`[POST][LOGIN]>USER>${req.email}`);
     const email = req.body.email;
     const password = req.body.password;
 
@@ -243,8 +248,11 @@ app.listen(port, '0.0.0.0', () => {
 
 
 app.post('/user/appointment/new', authenticateToken, (req,res) =>{
+    
+    console.log(`[POST][APPOINTMENT][NEW]>USER>${req.user.id}`);
     const newAppointment = new Appointment({ 
         type: req.body.type, 
+        title: req.body.title,
         number: req.body.number ?? "Not Applicable",
         location: req.body.location,
         ward: req.body.ward ?? 'Not Applicable',
@@ -275,18 +283,37 @@ app.post('/appointment/type/new', (req,res) =>{
 });
 
 app.get('/user/appointments', authenticateToken, (req,res) =>{
-
+    console.log(`[GET][APPOINTMENT]>USER>${req.user.id}`);
     Appointment.find({userID: req.user.id})
     .populate('location')
     .exec()
     .then((err, data) => {
         if(err) return res.send(err);
-        if(err === (null || undefined) || data.length === 0) return res.sendStatus(404);
-        Hospital.find({_id: data})
-        console.log(`[GET][APPOINTMENTS]>USER>${req.user.id}>DATA>${data}`);
+        if(data === (null || undefined) || data.length === 0) return res.sendStatus(404);
+        // console.log(`[GET][APPOINTMENTS]>USER>${req.user.id}>DATA>${data}`);
         res.json(data);
     });
 });
+
+app.post('/user/appointment', authenticateToken, (req,res) =>{
+    console.log(`[POST][APPOINTMENT]>USER>${req.user.id}>DATA>${req.body.appointmentId}`);
+    if(req.body.appointmentId){
+        Appointment.find({_id: req.body.appointmentId})
+        .populate('location')
+        .exec()
+        .then((err, data) => {
+            if(err) console.log(err);
+            if(err) return res.send(err);
+            if(data === (null || undefined) || data.length === 0) return res.sendStatus(404);
+            // console.log(`[GET][APPOINTMENTS][ID]>USER>${req.user.id}>DATA>${data}`);
+            res.json(data);
+        })
+    }else{
+        return res.sendStatus(400);
+    }
+});
+
+
 
 app.get('/appointment/type', (req,res) =>{
     AppointmentType.find({}, (err, data) => {

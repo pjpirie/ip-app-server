@@ -103,51 +103,59 @@ connection.once('open', (res, err) => {
 
 
 const authenticateToken = (req, res, next) => {
-    if(!req.headers.msg )console.log(`[POST][AUTH][MW] Initialised`);
-    if(req.headers.msg ) console.log(`${log.purple + req.headers.msg + log.reset}[POST][AUTH][MW] Initialised`);
-    if(req.headers['authorization'] === (null || undefined)) return res.sendStatus(401);
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][AUTH][MW] Initialised`);
+    if(req.headers['authorization'] === (null || undefined)) return res.status(401).end();
     
     const authHeader = req.headers['authorization'];
     const tokens = authHeader.split(' ');
     const token = tokens[1] && tokens[1].trim();
     let rToken = tokens[2] && tokens[2].trim();
 
-    if(token === (null || undefined)) return res.sendStatus(401);
+    if(token === (null || undefined)) return res.status(401).end();
     RefreshToken.findOne({token: rToken}, (RTerr, RTdata) => {
         if(RTerr) rToken = null;
         if(RTdata === null) rToken = null;
         jwt.verify(token, jwtSecret, (err, user) => {
             if(err){
+                console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][AUTH][MW] Auth Token Invalid`);
                 if(rToken !== null){
                     jwt.verify(rToken, refreshTokenSecret, (err, data) => {
-                        if(err) console.error(err);
-                        if(err) return res.sendStatus(403);
-                        if(!req.headers.msg )console.log(`[POST][AUTH][MW][REFRESH]>USER>${data.id} ${log.green + 'Success'}`);
-                        if(req.headers.msg ) console.log(`${log.purple + req.headers.msg + log.reset}[POST][AUTH][MW][REFRESH]>USER>${data.id} ${log.green + 'Success'}`);
+                        console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][AUTH][MW] Refresh Needed`);
+                        console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][AUTH][MW]>${err ? 'ERROR' : 'DATA'}>${JSON.stringify((err ? err : data))}`);
+                        if(err){
+                            console.error(err);
+                            return res.status(403).end();
+                        };
                         req.user = data;
                         req.newAuthToken = genAccessToken(data.id);
+                        console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][AUTH][MW][REFRESH][003]>USER>${data.id} ${log.green + 'Success'}`);
                         return next();
-                    })
+                    });
                 }else{
-                    return res.sendStatus(403);
-                }
-            }
-            if(res.headersSent) return;
-            if(user !== (null || undefined)){
-                console.log(`[POST][AUTH][MW]> ${JSON.stringify(user)}`);
-                if(user.id === (null || undefined)){
-                    user = {id: user};
-                    console.log(`[POST][AUTH][MW]> ${JSON.stringify(user)}`);
+                    console.log(`[POST][AUTH][MW] Token Null`);
+                    return res.status(403).end();
                 }
             }else{
-                console.error(`[POST][AUTH][MW]> ${JSON.stringify(user)}`);
-                // return res.sendStatus(403);
+                if(res.headersSent) return;
+                if(user !== (null || undefined)){
+                    // console.log(`[POST][AUTH][MW]> ${JSON.stringify(user)}`);
+                    if(user.id === (null || undefined)){
+                        user = {id: user};
+                        req.user.id = user;
+                        console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][AUTH][MW][002]>USER>${JSON.stringify(user)} ${log.green + 'Success'}`);
+                        return next();
+                        // console.log(`[POST][AUTH][MW]> ${JSON.stringify(user)}`);
+                    }else{
+                        console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][AUTH][MW][001]>USER>${JSON.stringify(user.id)} ${log.green + 'Success'}`);
+                        req.user = user;
+                        return next();
+                    }
+                }else{
+                    console.error(`[POST][AUTH][MW]> ${JSON.stringify(user)}`);
+                    return res.status(403).end();
+                }
             }
-            console.log(`[POST][AUTH][MW]>USER>${user}`);
-            req.user = user;
-            // if(!req.headers.msg) console.log(`[POST][AUTH]>USER>${user} ${log.green + 'Success'}`);
-            // if(req.headers.msg) console.log(`${log.purple + req.headers.msg + log.reset}[POST][AUTH]>USER>${user} ${log.green + 'Success'}`);
-            return next();
+            return res.status(500).end();
         });
 
     })
@@ -159,17 +167,25 @@ const genAccessToken = (userID) => {
 
 
 app.get('/', (req, res) => {
-    if(!req.headers.msg) console.log(`[GET][ROOT] Accessed '/'`);
-    if(req.headers.msg) console.log(`${log.purple + req.headers.msg + log.reset}[GET][ROOT] Accessed '/'`);
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[GET][ROOT] Accessed '/'`);
             
-    res.status(200).send("Hello, World!")
+    return res.status(200).send("Hello, World!")
 });
 
 app.post('/auth', authenticateToken,  (req, res) => {
-    if(!req.headers.msg) console.log(`[POST][AUTH]>USER>${req.user.id}`);
-    if(req.headers.msg) console.log(`${log.purple + req.headers.msg + log.reset}[POST][AUTH]>USER>${req.user.id}`);
-    if(req.newAuthToken) return res.status(200).json({authToken: req.newAuthToken});
-    return res.sendStatus(200);
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][AUTH]>USER>${req.user.id}`);
+    if(req.newAuthToken) return res.status(200).json({authToken: req.newAuthToken, status: 200});
+    return res.status(200).json({status: 200});
+});
+
+app.get('/user', authenticateToken,  (req, res) => {
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[GET][USER]>USER>${req.user.id}`);
+    User.findOne({_id: req.user.id}, (err, data) => {
+        if(err) return res.status(500).end();
+        if(data === null) return res.status(404).end();
+        console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[GET][USER]>DATA>${data}`);
+        return res.status(200).json({userData: data, status: 201});
+    });
 });
 
 /* 
@@ -178,8 +194,7 @@ app.post('/auth', authenticateToken,  (req, res) => {
 *   <X Returns the error / JSON [400]
 */
 app.post('/user/register', (req, res) => {
-    if(!req.headers.msg) console.log(`[POST][REGISTER]>USER>${req.body.email}`);
-    if(req.headers.msg) console.log(`${log.purple + req.headers.msg + log.reset}[POST][REGISTER]>USER>${req.body.email}`);
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][REGISTER]>USER>${req.body.email}`);
     const firstname = req.body.first_name;
     const lastname = req.body.last_name;
     const email = req.body.email.toLowerCase();
@@ -192,23 +207,24 @@ app.post('/user/register', (req, res) => {
     */
     if ((firstname || lastname || email || password || phone) === (undefined || null)) {
         console.table({ error: 'Please fill in all form fields'});
-        res.json({ error: 'Please fill in all form fields'});
+        return res.json({ error: 'Please fill in all form fields'});
     }
 
     User.exists({ email: email }, (err, data) => {
         if (err) {
-            res.send(err);
+            return res.send(err);
         } else {
             if(data){
-                res.status(400).json(({ error: 'Email already in our records'}));
+                return res.status(400).json(({ error: 'Email already in our records'}));
             }else{
                 console.table([firstname, lastname, email, password, phone]);
                 const newUser = new User({ firstName: firstname, lastName: lastname, email: email, password: password, phone: phone });
                 newUser.save()
-                .then(() => res.status(200).json('User Added'))
+                .then(() => {
+                    return res.status(200).json({msg: 'User Added', userID: newUser._id})})
                 .catch(err => {
-                    res.status(400).json(({ error: 'Error creating your account please try again later.'}));
-                    console.log('Error: ' + err);
+                    console.error('Error: ' + err);
+                    return res.status(400).json(({ error: 'Error creating your account please try again later.'}));
                 });
             }
         }
@@ -218,9 +234,74 @@ app.post('/user/register', (req, res) => {
 });
 
 
+app.delete('/user', authenticateToken, (req, res) => {
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[DELETE][USER]>USER>${req.user.id}`);
+
+    User.findOneAndDelete({ _id: req.user.id }, (err) => {
+        if(err) return res.status(500).end();
+        return res.status(204).end();
+    })
+    
+});
+
+app.post('/user/name', authenticateToken, (req, res) => {
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][NAME]>USER>${req.user.id}`);
+    if(req.body){
+        console.log(req.body);
+    }else{
+        return res.status(400).end();
+    };
+    User.findOne({ _id: req.user.id }, (err, user) => {
+        if(err) return res.status(500).end();
+        if(user === null) return res.status(404).end();
+        user.firstName = req.body.firstName;
+        user.lastName = req.body.lastName;
+        user.save()
+        .then(() => {
+            return res.status(200).json({msg: 'User Updated', userID: user._id , firstName: user.firstName, lastName: user.lastName});
+        })
+        .catch(err => {
+            console.error(err); 
+            return res.status(500).end();
+        });
+    });
+});
+
+app.post('/user/email', authenticateToken, (req, res) => {
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][EMAIL]>USER>${req.user.id}`);
+    if(req.body){
+        console.log(req.body);
+    }else{
+        return res.status(400).end();
+    };
+    User.exists({ email: req.body.email }, (err, data) => {
+        if (err) {
+            return res.send(err);
+        } else {
+            if(data){
+                return res.status(400).json(({ error: 'Email already in our records'}));
+            }else{
+                User.findOne({ _id: req.user.id }, (err, user) => {
+                    if(err) return res.status(500).end();
+                    if(user === null) return res.status(404).end();
+                    user.email = req.body.email;
+                    user.save()
+                    .then(() => {
+                        return res.status(200).json({msg: 'User Updated', userID: user._id , email: user.email});
+                    })
+                    .catch(err => {
+                        console.error(err); 
+                        return res.status(500).end();
+                    });
+                });
+            }
+        }
+    });
+    
+});
+
 app.post('/user/login', (req, res) => {
-    if(!req.headers.msg) console.log(`[POST][LOGIN]>USER>${req.body.email}`);
-    if(req.headers.msg ) console.log(`${log.purple + req.headers.msg + log.reset}[POST][LOGIN]>USER>${req.body.email}`);
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][LOGIN]>USER>${req.body.email}`);
     const email = req.body.email;
     const password = req.body.password;
 
@@ -254,17 +335,17 @@ app.post('/user/login', (req, res) => {
                         const rToken = jwt.sign(user, refreshTokenSecret);
                         const newRefreshToken = new RefreshToken({userID: data._id, token: rToken});
                         newRefreshToken.save()
-                        .then(() => res.json({Atoken: accessToken, Rtoken: rToken}))
+                        .then(() => { return res.json({Atoken: accessToken, Rtoken: rToken})})
                         .catch(err => {
-                            res.status(400).json(({ error: 'Error creating your account please try again later.'}));
-                            console.log('Error: ' + err);
+                            console.error('Error: ' + err);
+                            return res.status(400).json(({ error: 'Error creating your account please try again later.'}));
                         });
 
                         }
                 }
             })
         } else {
-            res.json("Error: Incorrect Password");
+            return res.json("Error: Incorrect Password");
         }
         
     });
@@ -272,31 +353,29 @@ app.post('/user/login', (req, res) => {
 
 app.post('/token', (req, res) => {
 const refreshToken = req.body.token;
-    if(refreshToken == null) return res.sendStatus(401);
+    if(refreshToken == null) return res.status(401).end();
     RefreshToken.find({ token: refreshToken }, (err, data) => {
-        if(!data.includes(refreshToken)) return res.sendStatus(403);
+        if(!data.includes(refreshToken)) return res.status(403).end();
         jwt.verify(refreshToken, refreshTokenSecret, (err, user) => {
-            if(err) return res.sendStatus(403).json(err);
+            if(err) return res.status(403).json(err);
             const accessToken = genAccessToken(user._id)
-            res.json(accessToken);
+            return res.json(accessToken);
         });
     })
 });
 
 app.delete('/logout', authenticateToken, (req, res) => {
-    if(req.headers.msg ) console.log(`${log.purple + req.headers.msg + log.reset}[POST][LOGOUT]>USER>${req.user.id}`);
-    if(!req.headers.msg) console.log(`[POST][LOGOUT]>USER>${req.user.id}`);
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][LOGOUT]>USER>${req.user.id}`);
     RefreshToken.findOneAndDelete({ token: req.body.token }, (err) => {
-        if(err) return res.sendStatus(500);
-        return res.sendStatus(204);
+        if(err) return res.status(500).end();
+        return res.status(204).end();
     })
 })  
 
 
 
 app.post('/user/appointment/new', authenticateToken, (req,res) =>{
-    if(!req.headers.msg) console.log(`[POST][APPOINTMENT][NEW]>USER>${req.user.id}`);
-    if(req.headers.msg ) console.log(`${log.purple + req.headers.msg + log.reset}[POST][APPOINTMENT][NEW]>USER>${req.user.id}`);
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][APPOINTMENT][NEW]>USER>${req.user.id}`);
     
     const newAppointment = new Appointment({ 
         type: req.body.type, 
@@ -317,15 +396,6 @@ app.post('/user/appointment/new', authenticateToken, (req,res) =>{
     });
 });
 
-app.delete('/user/appointment', authenticateToken, (req,res) =>{
-    if(!req.headers.msg) console.log(`[DELETE][APPOINTMENT]>USER>${req.user.id}`);
-    if(req.headers.msg ) console.log(`${log.purple + req.headers.msg + log.reset}[DELETE][APPOINTMENT]>USER>${req.user.id}`);
-    Appointment.findOneAndDelete({ _id: req.body.appointmentId }, (err) => {
-        if(err) return res.sendStatus(500);
-        return res.sendStatus(204);
-    })
-});
-
 app.post('/appointment/type/new', authenticateToken, (req,res) =>{
     const newAppointmentType = new AppointmentType({ 
         title: req.body.title, 
@@ -333,24 +403,23 @@ app.post('/appointment/type/new', authenticateToken, (req,res) =>{
         identifier: req.body.identifier
     });
         newAppointmentType.save()
-        .then(() => res.status(200).json({msg: 'Appointment Type Added', typeId: newAppointmentType._id}))
+        .then(() => {return res.status(200).json({msg: 'Appointment Type Added', typeId: newAppointmentType._id})})
         .catch(err => {
-            res.status(400).json(({ error: 'Error creating your appointment type please try again later.'}));
-            console.log('Error: ' + err);
+            console.error('Error: ' + err);
+            return res.status(400).json(({ error: 'Error creating your appointment type please try again later.'}));
         });
 });
 
 app.delete('/appointment/type', authenticateToken, (req,res) =>{
-    if(!req.headers.msg) console.log(`[DELETE][APPOINTMENT][TYPE]>USER>${req.user.id}`);
-    if(req.headers.msg ) console.log(`${log.purple + req.headers.msg + log.reset}[DELETE][APPOINTMENT][TYPE]>USER>${req.user.id}`);
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[DELETE][APPOINTMENT][TYPE]>USER>${req.user.id}`);
     AppointmentType.findOneAndDelete({ _id: req.body.typeId }, (err) => {
-        if(err) return res.sendStatus(500);
-        return res.sendStatus(204);
+        if(err) return res.status(500).end();
+        return res.status(204).end();
     })
 });
 
 app.get('/user/appointments', authenticateToken, (req,res) =>{
-    console.log(`[GET][APPOINTMENT]>USER>${req.user.id}`);
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[GET][APPOINTMENT]>USER>${req.user.id}`);
     Appointment.find({userID: req.user.id})
     .populate('location')
     .exec()
@@ -358,28 +427,55 @@ app.get('/user/appointments', authenticateToken, (req,res) =>{
         if(err) return res.send(err);
         if(data === (null || undefined) || data.length === 0) return res.sendStatus(404);
         // console.log(`[GET][APPOINTMENTS]>USER>${req.user.id}>DATA>${data}`);
-        res.status(200).json(data);
+        return res.status(200).json(data);
     });
 });
 
 app.post('/user/appointment', authenticateToken, (req,res) =>{
-    if(!req.headers.msg) console.log(`[POST][APPOINTMENT]>USER>${req.user.id}`);
-    if(req.headers.msg ) console.log(`${log.purple + req.headers.msg + log.reset}[POST][APPOINTMENT]>USER>${req.user.id}`);
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][APPOINTMENT]>USER>${req.user.id}`);
     
-    if(!req.body.appointmentId) return res.sendStatus(400);
+    if(!req.body.appointmentId) return res.status(400).end();
     if(req.body.appointmentId){
-        Appointment.find({_id: req.body.appointmentId})
+        Appointment.findOne({_id: req.body.appointmentId})
         .populate('location')
         .exec()
-        .then((err, data) => {
-            if(err) console.error(err);
-            if(err) return res.send(err);
-            if(data === (null || undefined) || data.length === 0) return res.sendStatus(404);
-            res.status(200).json(data);
+        .then((data) => {
+            if(data === (null || undefined) || data.length === 0) {
+                return res.status(404).end();
+            }
+            if(data.userID === req.user.id) {
+                return res.status(200).json(data);
+            }
+            return res.status(403).end();
         })
     }else{
-        return res.sendStatus(400);
+        return res.status(400).end();
     }
+    
+});
+
+app.delete('/user/appointment', authenticateToken, (req,res) =>{
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[DELETE][APPOINTMENT]>USER>${req.user.id}`);
+    
+    if(!req.body.appointmentId) return res.status(400).end();
+    if(req.body.appointmentId){
+        Appointment.findOne({_id: req.body.appointmentId}, (err, data) => {
+            if(err) return res.status(500).end();
+            if(data === (null || undefined) || data.length === 0) return res.status(404).end();
+            if(data.userID === req.user.id) {
+                console.log(data, req.user.id);
+                Appointment.findOneAndDelete({_id: req.body.appointmentId}, (err) => {
+                    if(err) return res.status(500).end();
+                    return res.status(204).end();
+                })
+            }else{
+                return res.status(403).end();
+            }
+        });
+    }else{
+        return res.status(400).end();
+    }
+    
 });
 
 
@@ -387,14 +483,14 @@ app.post('/user/appointment', authenticateToken, (req,res) =>{
 app.get('/appointment/type', (req,res) =>{
     AppointmentType.find({}, (err, data) => {
         if(err) return res.send(err);
-        res.json(data);
+        return res.json(data);
     })
 });
 
 app.get('/hospitals', (req,res) =>{
     Hospital.find({}, (err, data) => {
         if(err) return res.send(err);
-        res.json(data);
+        return res.json(data);
     })
 });
 
@@ -413,10 +509,10 @@ app.post('/hospital/new', authenticateToken, (req,res) =>{
         mapHTML: req.body.mapHTML,
     });
         newHospital.save()
-        .then(() => res.status(200).json({msg: 'Hospital Added', hospitalId: newHospital._id}))
+        .then(() => {return res.status(200).json({msg: 'Hospital Added', hospitalId: newHospital._id})})
         .catch(err => {
-            res.status(400).json(({ error: 'Error creating the Hospital please try again later.'}));
             console.error(err);
+            return res.status(400).json(({ error: 'Error creating the Hospital please try again later.'}));
         });
 });
 
@@ -424,8 +520,8 @@ app.delete('/hospital', authenticateToken, (req,res) =>{
     if(!req.headers.msg) console.log(`[DELETE][HOSPITAL]>USER>${req.user.id}`);
     if(req.headers.msg ) console.log(`${log.purple + req.headers.msg + log.reset}[DELETE][HOSPITAL]>USER>${req.user.id}`);
     Hospital.findOneAndDelete({ _id: req.body.hospitalId }, (err) => {
-        if(err) return res.sendStatus(500);
-        return res.sendStatus(204);
+        if(err) return res.status(500).end();
+        return res.status(204).end();
     })
 });
 

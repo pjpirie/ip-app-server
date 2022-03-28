@@ -49,7 +49,7 @@ describe('Testing Account Setup', () => {
         .send(testUser)
         .end((err, res) => {
             expect(err).to.be.null;
-            if(res.status === 200) {
+            if(res.statusCode === 200) {
                 expect(res).to.have.status(200);
                 expect(res.body).to.not.be.null;
                 expect(res.body.userID).to.not.be.null;

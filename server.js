@@ -422,6 +422,8 @@ app.get('/user/appointments', authenticateToken, (req,res) =>{
     console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[GET][APPOINTMENT]>USER>${req.user.id}`);
     Appointment.find({userID: req.user.id})
     .populate('location')
+    .sort('date')
+    .sort('time')
     .exec()
     .then((err, data) => {
         if(err) return res.send(err);
@@ -441,9 +443,12 @@ app.post('/user/appointment', authenticateToken, (req,res) =>{
         .exec()
         .then((data) => {
             if(data === (null || undefined) || data.length === 0) {
+                console.error(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][APPOINTMENT]>USER>${req.user.id}>404`);
                 return res.status(404).end();
             }
             if(data.userID === req.user.id) {
+                console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][APPOINTMENT]>USER>${req.user.id} ${log.green}Success` );
+                console.log(data);
                 return res.status(200).json(data);
             }
             return res.status(403).end();
@@ -478,7 +483,14 @@ app.delete('/user/appointment', authenticateToken, (req,res) =>{
     
 });
 
-
+app.get('/user/phone', authenticateToken, (req,res) =>{
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[GET][PHONE]>USER>${req.user.id}`);
+    User.findOne({_id: req.user.id}, (err, data) => {
+        if(err) return res.status(500).end();
+        if(data === (null || undefined) || data.length === 0) return res.status(404).end();
+        return res.status(200).json(data.phone);
+    });
+});
 
 app.get('/appointment/type', (req,res) =>{
     AppointmentType.find({}, (err, data) => {

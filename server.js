@@ -42,6 +42,33 @@ console.error = function() {
     originalConsoleError.apply( console, args );
 };
 
+function responceLogging(req, res, next) {
+    let oldSend = res.status
+    let prefixArr = '';
+    let path = [req.method.toLowerCase()];
+    req.path.split('/').forEach(element => path.push(element));
+    path.forEach(e => {
+        if(e === 'user'){prefixArr = `${prefixArr}${log.cyan}[${e.toUpperCase()}]${log.reset}`; return;}
+        if(e === 'delete'){prefixArr = `${prefixArr}${log.red}[${e.toUpperCase()}]${log.reset}`; return}
+        if(e === 'appointment'){prefixArr = `${prefixArr}${log.yellow}[${e.toUpperCase()}]${log.reset}`; return}
+        if(e === 'login'){prefixArr = `${prefixArr}${log.green}[${e.toUpperCase()}]${log.reset}`; return}
+        if(e === 'auth'){prefixArr = `${prefixArr}${log.purple}[${e.toUpperCase()}]${log.reset}`; return}
+        if(e === 'get'){prefixArr = `${prefixArr}${log.blue}[${e.toUpperCase()}]${log.reset}`; return}
+        if(e === 'post'){prefixArr = `${prefixArr}${log.yellow}[${e.toUpperCase()}]${log.reset}`; return}
+        if(e !== '') prefixArr = `${prefixArr}[${e.toUpperCase()}]`;
+    });
+    const prefix = prefixArr;
+
+    res.status = function(data) {
+        console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}${prefix} Status: ${res.statusCode === 200 ? log.green : log.red}${res.statusCode}${log.reset}`);
+        res.status = oldSend 
+        return res.status(data)
+    }
+    next()
+}
+
+
+
 const log = {
     red: "\u001b[1;31m",
     green: "\u001b[1;32m",
@@ -60,6 +87,7 @@ const jwtSecret = process.env.JWT_SECRET;
 const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET;
 
 app.use(express.json())
+app.use(responceLogging);
 
 // app.use(express.json());
 // app.use(cookieParser());
@@ -155,7 +183,7 @@ const authenticateToken = (req, res, next) => {
                     return res.status(403).end();
                 }
             }
-            return res.status(500).end();
+            // return res.status(500).end();
         });
 
     })
@@ -184,7 +212,15 @@ app.get('/user', authenticateToken,  (req, res) => {
         if(err) return res.status(500).end();
         if(data === null) return res.status(404).end();
         console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[GET][USER]>DATA>${data}`);
-        return res.status(200).json({userData: data, status: 201});
+        const resData = {
+            email: data.email,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            phone: data.phone,
+            _id: data._id
+        };
+        console.log(resData);
+        return res.status(200).json({userData: resData, status: 200});
     });
 });
 
@@ -239,7 +275,10 @@ app.delete('/user', authenticateToken, (req, res) => {
 
     User.findOneAndDelete({ _id: req.user.id }, (err) => {
         if(err) return res.status(500).end();
-        return res.status(204).end();
+        RefreshToken.findOneAndDelete({ userID: req.user.id }, (err) => {
+            if(err) return console.error(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[DELETE][USER]>REFRESH>${err}`);
+            return res.status(204).end();
+        })
     })
     
 });
@@ -258,7 +297,7 @@ app.post('/user/name', authenticateToken, (req, res) => {
         user.lastName = req.body.lastName;
         user.save()
         .then(() => {
-            return res.status(200).json({msg: 'User Updated', userID: user._id , firstName: user.firstName, lastName: user.lastName});
+            return res.status(200).json({msg: 'Name Updated', userID: user._id , firstName: user.firstName, lastName: user.lastName});
         })
         .catch(err => {
             console.error(err); 
@@ -269,16 +308,19 @@ app.post('/user/name', authenticateToken, (req, res) => {
 
 app.post('/user/email', authenticateToken, (req, res) => {
     console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][EMAIL]>USER>${req.user.id}`);
-    if(req.body){
-        console.log(req.body);
-    }else{
-        return res.status(400).end();
-    };
+    if(!req.body) return res.status(400).json({error: 'Please fill in all form fields'});
+    
     User.exists({ email: req.body.email }, (err, data) => {
         if (err) {
-            return res.send(err);
+            return res.status(500).end();
         } else {
             if(data){
+                // console.log({ 
+                //     requesterID: req.user.id,
+                //     emailOwnerID: data._id.toString(),
+                //     sameEmail: data._id.toString() === req.user.id
+                // });
+                if(data._id.toString() === req.user.id) return res.status(400).json(({ error: 'You already have an account with this email'}));
                 return res.status(400).json(({ error: 'Email already in our records'}));
             }else{
                 User.findOne({ _id: req.user.id }, (err, user) => {
@@ -287,13 +329,46 @@ app.post('/user/email', authenticateToken, (req, res) => {
                     user.email = req.body.email;
                     user.save()
                     .then(() => {
-                        return res.status(200).json({msg: 'User Updated', userID: user._id , email: user.email});
+                        return res.status(200).json({msg: 'Email Updated', userID: user._id , email: user.email});
                     })
                     .catch(err => {
                         console.error(err); 
                         return res.status(500).end();
                     });
                 });
+            }
+        }
+    });
+    
+});
+
+app.post('/user/password', authenticateToken, (req, res) => {
+    console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][PASSWORD]>USER>${req.user.id}`);
+    if(!req.body.currentPassword) return res.status(400).json({error: 'Please fill in all form fields'});
+    if(!req.body.newPassword) return res.status(400).json({error: 'Please fill in all form fields'});
+    console.log(req.body.currentPassword, " ", req.body.newPassword);
+    User.findOne({ _id: req.user.id }, (err, data) => {
+        if (err) {
+            return res.status(500).end();
+        } else {
+            if(data){
+                // console.log("PASSWORD>DATA>",passwordHash.verify('beepboop', data.password))
+                // console.log("PASSWORD>DATA>",passwordHash.verify(req.body.currentPassword, data.password))
+                if(passwordHash.verify(req.body.currentPassword, data.password)){
+                    const newPass = passwordHash.generate(req.body.newPassword);
+                    // const newPass = req.body.newPassword;
+                    data.password = newPass;
+                    return data.save()
+                    .then(res.status(200).json({msg: 'Password Updated', userID: data._id}))
+                    .catch(err => {
+                        console.error(err);
+                        res.status(500).json(err)
+                    });
+                }else{
+                    return res.status(403).json(({ error: 'Incorrect Password'}));
+                }
+            }else{
+                return res.status(400).json(({ error: 'No User with that id'}));
             }
         }
     });

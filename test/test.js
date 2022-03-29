@@ -13,7 +13,7 @@ require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const jwtSecret = process.env.JWT_SECRET;
 
-const testUser = {
+let testUser = {
     first_name: "Tes",
     last_name: "Ter",
     email: 'test@test.com',
@@ -61,6 +61,26 @@ describe('Testing Account Setup', () => {
             
         });
     });
+    it.skip('[POST][/user/password] > change the test accounts password back, 200 status', done => {
+        chai.request(server)
+        .post('/user/password')
+        .auth(`${token.Atoken} ${token.Rtoken}`, { type: 'bearer' })
+        .send({
+            currentPassword: 'beepboop',
+            newPassword: testUser.password
+        })
+        .set('msg', testPrefix)
+        .end((err, res) => {
+            expect(err).to.be.null;
+            expect(res).to.have.status(200);
+            expect(res.body).to.not.be.null;
+            expect(res.body).to.not.eql({});
+            expect(res.body.msg).to.not.be.null;
+            expect(res.body.msg).to.eql('Password Updated');
+            testUser.password = 'test';
+            done();
+        });
+    });
     it('[POST][/user/login] > logs in to the test account, 200 status', done => {
         chai
         .request(server)
@@ -69,8 +89,8 @@ describe('Testing Account Setup', () => {
         .send({email: testUser.email, password: testUser.password})
         .end((err, res) => {
             expect(err).to.be.null;
-            token = res.body;
             expect(res).to.have.status(200);
+            token = res.body;
             done();
         });
     });
@@ -263,6 +283,63 @@ describe('Account and Authentication Services', () => {
             expect(res.body.email).to.not.be.null;
             expect(res.body.email).to.eql('test@test.com');
             tempEmail = 'init';
+            done();
+        });
+    });
+    it.skip('[POST][/user/password] > change the test accounts password, 200 status', done => {
+        chai.request(server)
+        .post('/user/password')
+        .auth(`${token.Atoken} ${token.Rtoken}`, { type: 'bearer' })
+        .send({
+            currentPassword: testUser.password,
+            newPassword: 'beepboop'
+        })
+        .set('msg', testPrefix)
+        .end((err, res) => {
+            expect(err).to.be.null;
+            expect(res).to.have.status(200);
+            expect(res.body).to.not.be.null;
+            expect(res.body).to.not.eql({});
+            expect(res.body.msg).to.not.be.null;
+            expect(res.body.msg).to.eql('Password Updated');
+            testUser.password = 'beepboop';
+            done();
+        });
+    });
+    it('[POST][/user/password] > change the test accounts password with wrong current password, 403 status', done => {
+        chai.request(server)
+        .post('/user/password')
+        .send({
+            currentPassword: '123321123321123321123321',
+            newPassword: testUser.password
+        })
+        .auth(`${token.Atoken} ${token.Rtoken}`, { type: 'bearer' })
+        .set('msg', testPrefix)
+        .end((err, res) => {
+            expect(err).to.be.null;
+            expect(res).to.have.status(403);
+            expect(res.body).to.not.be.null;
+            expect(res.body).to.not.eql({});
+            expect(res.body.error).to.not.be.null;
+            expect(res.body.error).to.eql('Incorrect Password');
+            done();
+        });
+    });
+    it('[POST][/user/password] > change the test accounts password with wrong payload, 400 status', done => {
+        chai.request(server)
+        .post('/user/password')
+        .send({
+            currentPassword: '123321123321123321123321'
+        })
+        .auth(`${token.Atoken} ${token.Rtoken}`, { type: 'bearer' })
+        .set('msg', testPrefix)
+        .end((err, res) => {
+            expect(err).to.be.null;
+            expect(res).to.have.status(400);
+            expect(res.body).to.not.be.null;
+            expect(res.body).to.not.eql({});
+            expect(res.body.error).to.not.be.null;
+            expect(res.body.error).to.eql('Please fill in all form fields');
             done();
         });
     });

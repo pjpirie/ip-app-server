@@ -89,8 +89,6 @@ const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET;
 app.use(express.json())
 app.use(responceLogging);
 
-// app.use(express.json());
-// app.use(cookieParser());
 app.use(cors({
     origin: [
         'https://localhost:3000',
@@ -98,19 +96,7 @@ app.use(cors({
     ],
     credentials: true
 }));
-// app.use(function(req, res, next) {
-//     res.set('Access-Control-Allow-Origin', 'http://localhost:3000');
-//     res.set('Access-Control-Allow-Credentials', true);
-//     res.set('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-//     res.set('Access-Control-Allow-Headers', 'Origin, Product-Session, X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept, Referer, User-Agent');
-//     // intercept OPTIONS method
-//     if ('OPTIONS' == req.method) {
-//         res.send(200);
-//     }
-//     else {
-    //         next();
-    //     }
-    // });
+
 
 module.exports = app.listen(port, '0.0.0.0', () => {
     console.log(`App listening on port ${port}!`);
@@ -166,13 +152,11 @@ const authenticateToken = (req, res, next) => {
             }else{
                 if(res.headersSent) return;
                 if(user !== (null || undefined)){
-                    // console.log(`[POST][AUTH][MW]> ${JSON.stringify(user)}`);
                     if(user.id === (null || undefined)){
                         user = {id: user};
                         req.user.id = user;
                         console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][AUTH][MW][002]>USER>${JSON.stringify(user)} ${log.green + 'Success'}`);
                         return next();
-                        // console.log(`[POST][AUTH][MW]> ${JSON.stringify(user)}`);
                     }else{
                         console.log(`${req.headers.msg ? (log.purple + req.headers.msg + log.reset) : ''}[POST][AUTH][MW][001]>USER>${JSON.stringify(user.id)} ${log.green + 'Success'}`);
                         req.user = user;
@@ -183,7 +167,6 @@ const authenticateToken = (req, res, next) => {
                     return res.status(403).end();
                 }
             }
-            // return res.status(500).end();
         });
 
     })
@@ -315,11 +298,6 @@ app.post('/user/email', authenticateToken, (req, res) => {
             return res.status(500).end();
         } else {
             if(data){
-                // console.log({ 
-                //     requesterID: req.user.id,
-                //     emailOwnerID: data._id.toString(),
-                //     sameEmail: data._id.toString() === req.user.id
-                // });
                 if(data._id.toString() === req.user.id) return res.status(400).json(({ error: 'You already have an account with this email'}));
                 return res.status(400).json(({ error: 'Email already in our records'}));
             }else{
@@ -351,12 +329,9 @@ app.post('/user/password', authenticateToken, (req, res) => {
         if (err) {
             return res.status(500).end();
         } else {
-            if(data){
-                // console.log("PASSWORD>DATA>",passwordHash.verify('beepboop', data.password))
-                // console.log("PASSWORD>DATA>",passwordHash.verify(req.body.currentPassword, data.password))
+            if(data){ 
                 if(passwordHash.verify(req.body.currentPassword, data.password)){
                     const newPass = passwordHash.generate(req.body.newPassword);
-                    // const newPass = req.body.newPassword;
                     data.password = newPass;
                     return data.save()
                     .then(res.status(200).json({msg: 'Password Updated', userID: data._id}))
@@ -503,7 +478,6 @@ app.get('/user/appointments', authenticateToken, (req,res) =>{
     .then((err, data) => {
         if(err) return res.send(err);
         if(data === (null || undefined) || data.length === 0) return res.sendStatus(404);
-        // console.log(`[GET][APPOINTMENTS]>USER>${req.user.id}>DATA>${data}`);
         return res.status(200).json(data);
     });
 });
@@ -594,6 +568,7 @@ app.post('/hospital/new', authenticateToken, (req,res) =>{
         transport: req.body.transport,
         description: req.body.description,
         mapHTML: req.body.mapHTML,
+        identifier: req.body.identifier
     });
         newHospital.save()
         .then(() => {return res.status(200).json({msg: 'Hospital Added', hospitalId: newHospital._id})})

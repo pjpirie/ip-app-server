@@ -41,6 +41,11 @@ const hospitalSchema = new Schema({
         required: true,
         minlength: 5
     },
+    identifier: {
+        type: String,
+        required: true,
+        minlength: 3
+    },
     mapHTML: {
         type: String,
         required: true,

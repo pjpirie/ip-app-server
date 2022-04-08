@@ -61,26 +61,26 @@ describe('Testing Account Setup', () => {
             
         });
     });
-    it.skip('[POST][/user/password] > change the test accounts password back, 200 status', done => {
-        chai.request(server)
-        .post('/user/password')
-        .auth(`${token.Atoken} ${token.Rtoken}`, { type: 'bearer' })
-        .send({
-            currentPassword: 'beepboop',
-            newPassword: testUser.password
-        })
-        .set('msg', testPrefix)
-        .end((err, res) => {
-            expect(err).to.be.null;
-            expect(res).to.have.status(200);
-            expect(res.body).to.not.be.null;
-            expect(res.body).to.not.eql({});
-            expect(res.body.msg).to.not.be.null;
-            expect(res.body.msg).to.eql('Password Updated');
-            testUser.password = 'test';
-            done();
-        });
-    });
+    // it.skip('[POST][/user/password] > change the test accounts password back, 200 status', done => {
+    //     chai.request(server)
+    //     .post('/user/password')
+    //     .auth(`${token.Atoken} ${token.Rtoken}`, { type: 'bearer' })
+    //     .send({
+    //         currentPassword: 'beepboop',
+    //         newPassword: testUser.password
+    //     })
+    //     .set('msg', testPrefix)
+    //     .end((err, res) => {
+    //         expect(err).to.be.null;
+    //         expect(res).to.have.status(200);
+    //         expect(res.body).to.not.be.null;
+    //         expect(res.body).to.not.eql({});
+    //         expect(res.body.msg).to.not.be.null;
+    //         expect(res.body.msg).to.eql('Password Updated');
+    //         testUser.password = 'test';
+    //         done();
+    //     });
+    // });
     it('[POST][/user/login] > logs in to the test account, 200 status', done => {
         chai
         .request(server)
@@ -286,26 +286,26 @@ describe('Account and Authentication Services', () => {
             done();
         });
     });
-    it.skip('[POST][/user/password] > change the test accounts password, 200 status', done => {
-        chai.request(server)
-        .post('/user/password')
-        .auth(`${token.Atoken} ${token.Rtoken}`, { type: 'bearer' })
-        .send({
-            currentPassword: testUser.password,
-            newPassword: 'beepboop'
-        })
-        .set('msg', testPrefix)
-        .end((err, res) => {
-            expect(err).to.be.null;
-            expect(res).to.have.status(200);
-            expect(res.body).to.not.be.null;
-            expect(res.body).to.not.eql({});
-            expect(res.body.msg).to.not.be.null;
-            expect(res.body.msg).to.eql('Password Updated');
-            testUser.password = 'beepboop';
-            done();
-        });
-    });
+    // it.skip('[POST][/user/password] > change the test accounts password, 200 status', done => {
+    //     chai.request(server)
+    //     .post('/user/password')
+    //     .auth(`${token.Atoken} ${token.Rtoken}`, { type: 'bearer' })
+    //     .send({
+    //         currentPassword: testUser.password,
+    //         newPassword: 'beepboop'
+    //     })
+    //     .set('msg', testPrefix)
+    //     .end((err, res) => {
+    //         expect(err).to.be.null;
+    //         expect(res).to.have.status(200);
+    //         expect(res.body).to.not.be.null;
+    //         expect(res.body).to.not.eql({});
+    //         expect(res.body.msg).to.not.be.null;
+    //         expect(res.body.msg).to.eql('Password Updated');
+    //         testUser.password = 'beepboop';
+    //         done();
+    //     });
+    // });
     it('[POST][/user/password] > change the test accounts password with wrong current password, 403 status', done => {
         chai.request(server)
         .post('/user/password')
@@ -514,6 +514,7 @@ describe('Appointment Data Services', () => {
             parking: true,
             transport: 'Test Transport',
             description: 'Test Description',
+            identifier: 'TEST',
             mapHTML: 'Test Map HTML'
         })
         .set('msg', testPrefix)
